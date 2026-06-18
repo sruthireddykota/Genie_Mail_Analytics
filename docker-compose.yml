@@ -1,0 +1,46 @@
+services:
+
+  genie-mongodb:
+    image: mongo:7.0
+    container_name: genie-mongodb
+    restart: always
+    ports:
+      - "27018:27017"
+    networks:
+      - genie_network
+    volumes:
+      - genie_mongodb_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${GENIE_MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${GENIE_MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE:      ${MONGO_DB}
+    healthcheck:
+      test: "echo 'db.runCommand(\"ping\").ok' | mongosh localhost:27017/test --quiet"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  genie-mongo-express:
+    image: mongo-express:latest
+    container_name: genie-mongo-express
+    restart: on-failure
+    depends_on:
+      genie-mongodb:
+        condition: service_healthy
+    networks:
+      - genie_network
+    ports:
+      - "8082:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${GENIE_MONGO_ROOT_USERNAME}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${GENIE_MONGO_ROOT_PASSWORD}
+      ME_CONFIG_MONGODB_URL:           mongodb://${GENIE_MONGO_ROOT_USERNAME}:${GENIE_MONGO_ROOT_PASSWORD}@genie-mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME:    ${GENIE_MONGOEXPRESS_USERNAME}
+      ME_CONFIG_BASICAUTH_PASSWORD:    ${GENIE_MONGOEXPRESS_PASSWORD}
+
+volumes:
+  genie_mongodb_data:
+
+networks:
+  genie_network:
+    driver: bridge

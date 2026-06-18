@@ -1,0 +1,7 @@
+[[pages]]
+path = "pages/approval.py"
+name = "Approval"
+
+[[pages]]
+path = "pages/chatbot.py"
+name = "Chatbot"
