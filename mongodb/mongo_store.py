@@ -1,19 +1,22 @@
-import os
 import uuid
 from datetime import datetime
 from pymongo import MongoClient
-from dotenv import load_dotenv
 
-load_dotenv()
-
+from config.settings import settings
 
 class MongoStore:
 
     def __init__(self):
-        self.client = MongoClient(os.getenv("MONGO_URI"))
-        self.db = self.client[os.getenv("MONGO_DB", "genie_email")]
+        self.client = MongoClient(settings.MONGO_URI)
+        self.db = self.client[settings.MONGO_DB]
+
         self.sessions = self.db["sessions"]
         self.messages = self.db["messages"]
+        self.chat_messages = self.db["chat_messages"]
+        self.chat_sessions = self.db["chat_sessions"]
+        self.pending_emails = self.db["pending_emails"]
+        self.conversations = self.db["conversations"]
+        
 
     # Sessions
 
@@ -36,7 +39,7 @@ class MongoStore:
         return self.sessions.find_one({"domain": domain}, {"_id": 0})
 
     def get_session_by_reply(self, in_reply_to):
-        doc = self.db["conversations"].find_one({"message_id": in_reply_to})
+        doc = self.conversations.find_one({"message_id": in_reply_to})
         if not doc:
             return None
         return self.sessions.find_one({"session_id": doc["session_id"]}, {"_id": 0})
@@ -86,11 +89,19 @@ class MongoStore:
             role = "Customer" if msg["role"] == "customer" else "Agent"
             lines.append(f"{role}: {msg['content']}")
         return "\n".join(lines)
+    
+    def get_messages_by_domain(self, domain: str) -> list:
+        sessions = [s for s in self.get_all_sessions() if s["domain"] == domain]
+        all_messages = []
+        for session in sessions:
+            all_messages.extend(self.get_messages(session["session_id"]))
+        all_messages.sort(key=lambda m: m["timestamp"])
+        return all_messages
 
     # Conversations 
 
     def save_conversation(self, message_id, conversation_id, session_id="", sender="", question=""):
-        self.db["conversations"].insert_one({
+        self.conversations.insert_one({
             "message_id":      message_id,
             "conversation_id": conversation_id,
             "session_id":      session_id,
@@ -103,7 +114,7 @@ class MongoStore:
     
     def create_chat(self, customer_email, title, genie_conv_id):
         chat_id = str(uuid.uuid4())
-        self.db["chat_sessions"].insert_one({
+        self.chat_sessions.insert_one({
             "chat_id":        chat_id,
             "customer_email": customer_email,
             "title":          title,
@@ -114,23 +125,23 @@ class MongoStore:
 
     def get_chats_by_customer(self, customer_email):
         return list(
-            self.db["chat_sessions"].find(
+            self.chat_sessions.find(
                 {"customer_email": {"$regex": customer_email, "$options": "i"}},
                 {"_id": 0}
             ).sort("created_at", -1)
         )
 
     def get_chat(self, chat_id):
-        return self.db["chat_sessions"].find_one({"chat_id": chat_id}, {"_id": 0})
+        return self.chat_sessions.find_one({"chat_id": chat_id}, {"_id": 0})
 
     def update_chat_conv_id(self, chat_id, genie_conv_id):
-        self.db["chat_sessions"].update_one(
+        self.chat_sessions.update_one(
             {"chat_id": chat_id},
             {"$set": {"genie_conv_id": genie_conv_id}}
         )
 
     def save_chat_message(self, chat_id, role, content):
-        self.db["chat_messages"].insert_one({
+        self.chat_messages.insert_one({
             "chat_id":   chat_id,
             "role":      role,
             "content":   content,
@@ -139,7 +150,7 @@ class MongoStore:
 
     def get_chat_messages(self, chat_id):
         return list(
-            self.db["chat_messages"].find({"chat_id": chat_id}, {"_id": 0})
+            self.chat_messages.find({"chat_id": chat_id}, {"_id": 0})
             .sort("timestamp", 1)
         )
 
@@ -158,11 +169,11 @@ class MongoStore:
     
 
     def clear_chat(self, chat_id):
-        self.db["chat_messages"].delete_many({"chat_id": chat_id})
+        self.chat_messages.delete_many({"chat_id": chat_id})
 
     def delete_chat(self, chat_id):
-        self.db["chat_messages"].delete_many({"chat_id": chat_id})
-        self.db["chat_sessions"].delete_one({"chat_id": chat_id})
+        self.chat_messages.delete_many({"chat_id": chat_id})
+        self.chat_sessions.delete_one({"chat_id": chat_id})
 
 
     # Pending mails
@@ -178,7 +189,7 @@ class MongoStore:
             dataframe_records = []
             dataframe_columns = []
 
-        self.db["pending_emails"].insert_one({
+        self.pending_emails.insert_one({
             "pending_id":        pending_id,
             "sender":            email_data.get("sender", ""),
             "subject":           email_data.get("subject", ""),
@@ -209,7 +220,7 @@ class MongoStore:
             query["domain"] = domain
 
         docs = list(
-            self.db["pending_emails"].find(query, {"_id": 0})
+            self.pending_emails.find(query, {"_id": 0})
             .sort("created_at", -1)
         )
 
@@ -225,13 +236,13 @@ class MongoStore:
         return docs
 
     def update_pending_status(self, pending_id: str, status: str):
-        self.db["pending_emails"].update_one(
+        self.pending_emails.update_one(
             {"pending_id": pending_id},
             {"$set": {"status": status, "updated_at": datetime.utcnow()}}
         )
 
     def pending_email_exists(self, sender: str, domain: str, question: str) -> bool:
-        return self.db["pending_emails"].find_one({
+        return self.pending_emails.find_one({
             "sender": sender,
             "domain": domain,
             "questions": {"$in": [question]},
@@ -241,7 +252,7 @@ class MongoStore:
     #editable draft email
 
     def update_pending_draft(self, pending_id: str, draft_email: str):
-        self.db["pending_emails"].update_one(
+        self.pending_emails.update_one(
             {"pending_id": pending_id},
             {"$set": {"draft_email": draft_email, "updated_at": datetime.utcnow()}}
         )

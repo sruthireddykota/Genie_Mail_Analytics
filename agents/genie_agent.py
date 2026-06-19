@@ -1,16 +1,13 @@
-import os
 import time
 import json
 import requests
 import pandas as pd 
-from dotenv import load_dotenv
 
-load_dotenv()
+from config.settings import settings
 
-
-HOST  = os.getenv("DATABRICKS_HOST")
-TOKEN  = os.getenv("DATABRICKS_TOKEN")
-SPACE_ID = os.getenv("GENIE_SPACE_ID")
+HOST  = settings.DATABRICKS_HOST
+TOKEN  = settings.DATABRICKS_TOKEN
+SPACE_ID = settings.GENIE_SPACE_ID
 HEADERS  = {
     "Authorization": f"Bearer {TOKEN}",
     "Content-Type":  "application/json"

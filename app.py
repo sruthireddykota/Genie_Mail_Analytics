@@ -1,7 +1,6 @@
 import streamlit as st
-from dotenv import load_dotenv
-import os
-load_dotenv()
+
+from config.settings import settings
 
 
 st.set_page_config(
@@ -17,7 +16,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "").lower()
+ADMIN_EMAIL = settings.ADMIN_EMAIL.lower()
 
 if "customer_email" not in st.session_state:
     st.session_state.customer_email = None
@@ -27,7 +26,7 @@ if st.session_state.customer_email is None:
     with st.empty().container(border=True):
         col1, _ = st.columns([7, 1])
         with col1:
-            st.header("Genie Analytics — Admin Portal")
+            st.header("Genie Analytics - Admin Portal")
             st.write("")
             email_input = st.text_input("Email Address", placeholder="admin@example.com", key="login_email")
             st.write("")

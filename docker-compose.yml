@@ -34,9 +34,26 @@ services:
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: ${GENIE_MONGO_ROOT_USERNAME}
       ME_CONFIG_MONGODB_ADMINPASSWORD: ${GENIE_MONGO_ROOT_PASSWORD}
-      ME_CONFIG_MONGODB_URL:           mongodb://${GENIE_MONGO_ROOT_USERNAME}:${GENIE_MONGO_ROOT_PASSWORD}@genie-mongodb:27017/
-      ME_CONFIG_BASICAUTH_USERNAME:    ${GENIE_MONGOEXPRESS_USERNAME}
-      ME_CONFIG_BASICAUTH_PASSWORD:    ${GENIE_MONGOEXPRESS_PASSWORD}
+      ME_CONFIG_MONGODB_URL: mongodb://${GENIE_MONGO_ROOT_USERNAME}:${GENIE_MONGO_ROOT_PASSWORD}@genie-mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: ${GENIE_MONGOEXPRESS_USERNAME}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${GENIE_MONGOEXPRESS_PASSWORD}
+  
+  genie-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: genie-fastapi
+    restart: always
+    ports:
+      - "8002:8002"
+    networks:
+      - genie_network
+    depends_on:
+      genie-mongodb:
+        condition: service_healthy
+    env_file:
+      - .env
+
 
 volumes:
   genie_mongodb_data:

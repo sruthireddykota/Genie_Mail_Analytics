@@ -1,6 +1,5 @@
 import smtplib
 import io
-import os
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -9,14 +8,13 @@ from email.utils import make_msgid
 from email import encoders
 
 import pandas as pd
-from dotenv import load_dotenv
+from config.settings import settings
 
-load_dotenv()
 
-SMTP_HOST = os.getenv("SMTP_HOST")
-SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
-SMTP_USER  = os.getenv("SMTP_USER")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+SMTP_HOST = settings.SMTP_HOST
+SMTP_PORT = settings.SMTP_PORT
+SMTP_USER  = settings.SMTP_USER
+SMTP_PASSWORD = settings.SMTP_PASSWORD
 
 
 

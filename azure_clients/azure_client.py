@@ -1,18 +1,15 @@
-import os
-
-from dotenv import load_dotenv
-
-from agent_framework.azure import AzureAIAgentClient
+from agent_framework.foundry import FoundryChatClient
 from azure.identity.aio import DefaultAzureCredential
 
-load_dotenv()
+from config.settings import settings
 
-def get_client() -> AzureAIAgentClient:
+
+def get_client() -> FoundryChatClient:
     credential = DefaultAzureCredential()
 
-    client = AzureAIAgentClient(
-        project_endpoint=os.getenv("AZURE_AI_PROJECT_ENDPOINT"),
-        model_deployment_name=os.getenv("AZURE_DEPLOYMENT_NAME"),
+    client = FoundryChatClient(
+        project_endpoint=settings.AZURE_AI_PROJECT_ENDPOINT,
+        model=settings.AZURE_DEPLOYMENT_NAME,
         credential=credential
     )
     return client

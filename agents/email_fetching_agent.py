@@ -1,8 +1,8 @@
-import os
 import json
 import base64
 import io
 import re
+import os
 
 import PyPDF2
 from google.auth.transport.requests import Request
@@ -10,11 +10,13 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
+from config.settings import settings
+
 SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
-CREDENTIALS_FILE = os.getenv("CREDENTIALS_FILE", "credentials.json")
-TOKEN_FILE = os.getenv("TOKEN_FILE", "token.json")
-TARGET_LABEL = os.getenv("TARGET_LABEL", "genie-queries")
-PROCESSED_FILE  = "processed_emails.json"
+CREDENTIALS_FILE = settings.CREDENTIALS_FILE
+TOKEN_FILE = settings.TOKEN_FILE
+TARGET_LABEL = settings.TARGET_LABEL
+PROCESSED_FILE  = settings.PROCESSED_FILE
 
 
 def get_gmail_service():
@@ -229,7 +231,7 @@ def fetch_new_email():
 
 
     # Skip our own sent emails
-    smtp_user = os.getenv("SMTP_USER", "")
+    smtp_user = settings.SMTP_USER
     if smtp_user and smtp_user.lower() in sender.lower():
         processed.add(msg_id)
         save_processed(processed)
