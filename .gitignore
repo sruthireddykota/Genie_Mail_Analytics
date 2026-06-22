@@ -41,9 +41,6 @@ secrets/
 credentials.json
 token.json
 
-# Processed email tracker
-processed_emails.json
-conversations.json
 
 # Logs
 logs/

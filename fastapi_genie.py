@@ -211,3 +211,14 @@ def get_chat(chat_id: str):
 def get_chat_context(chat_id: str, limit: int = 5):
     context = store.build_chat_context(chat_id, limit=limit)
     return {"chat_id": chat_id, "context": context}
+
+# Processed emails
+
+@app.get("/processed/exists")
+def is_processed(message_id: str):
+    return {"exists": store.is_processed(message_id)}
+
+@app.post("/processed/mark")
+def mark_processed(message_id: str):
+    store.mark_processed(message_id)
+    return {"status": "marked"}

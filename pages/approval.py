@@ -9,7 +9,7 @@ import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
 
-from agents.email_sender_agent import send_email
+from gmail.email_sender import send_email
 from config.settings import settings
 
 load_dotenv()

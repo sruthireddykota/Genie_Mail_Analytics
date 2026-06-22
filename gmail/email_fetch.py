@@ -1,4 +1,3 @@
-import json
 import base64
 import io
 import re
@@ -11,12 +10,14 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
 from config.settings import settings
+from mongodb.mongo_store import MongoStore
+
+store = MongoStore()
 
 SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
 CREDENTIALS_FILE = settings.CREDENTIALS_FILE
 TOKEN_FILE = settings.TOKEN_FILE
 TARGET_LABEL = settings.TARGET_LABEL
-PROCESSED_FILE  = settings.PROCESSED_FILE
 
 
 def get_gmail_service():
@@ -78,18 +79,13 @@ def extract_domain_from_subject(subject: str) -> str | None:
 
 
 def extract_text_from_pdf(pdf_bytes: bytes) -> str:
-    """
-    Extracts plain text from a text-based PDF using PyPDF2.
-    Returns cleaned text with all pages combined.
-    """
     text = ""
     try:
         reader = PyPDF2.PdfReader(io.BytesIO(pdf_bytes))
         total_pages = len(reader.pages)
-
         print(f"PDF: {total_pages} pages found")
 
-        for page in enumerate(reader.pages):
+        for page in reader.pages:
             page_text = page.extract_text()
             if page_text:
                 text += page_text + "\n"
@@ -99,8 +95,7 @@ def extract_text_from_pdf(pdf_bytes: bytes) -> str:
     except Exception as e:
         print(f"PDF extraction error: {e}")
 
-    cleaned = text.strip()
-    return cleaned
+    return text.strip()
 
 
 def get_pdf_attachments(service, msg_id: str) -> list[dict]:
@@ -178,20 +173,6 @@ def get_pdf_attachments(service, msg_id: str) -> list[dict]:
     return attachments
 
 
-def load_processed():
-    if not os.path.exists(PROCESSED_FILE):
-        return set()
-    with open(PROCESSED_FILE, "r") as f:
-        try:
-            return set(json.load(f))
-        except (json.JSONDecodeError, ValueError):
-            return set()
-
-
-def save_processed(processed: set):
-    with open(PROCESSED_FILE, "w") as f:
-        json.dump(list(processed), f)
-
 
 def fetch_new_email():
     service  = get_gmail_service()
@@ -209,8 +190,7 @@ def fetch_new_email():
     if not messages:
         return None
 
-    processed   = load_processed()
-    unprocessed = [m for m in messages if m["id"] not in processed]
+    unprocessed = [m for m in messages if not store.is_processed(m["id"])]
 
     if not unprocessed:
         return None
@@ -233,8 +213,7 @@ def fetch_new_email():
     # Skip our own sent emails
     smtp_user = settings.SMTP_USER
     if smtp_user and smtp_user.lower() in sender.lower():
-        processed.add(msg_id)
-        save_processed(processed)
+        store.mark_processed(msg_id)
         return None
 
     #Extract PDF
@@ -251,8 +230,7 @@ def fetch_new_email():
     else:
         print("No PDF attachments found")
 
-    processed.add(msg_id)
-    save_processed(processed)
+    store.mark_processed(msg_id)
 
     return {
         "sender":      sender,

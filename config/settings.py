@@ -25,7 +25,6 @@ class Settings(BaseSettings):
     CREDENTIALS_FILE : str
     TOKEN_FILE  : str
     TARGET_LABEL  : str
-    PROCESSED_FILE : str
 
     ADMIN_EMAIL  : str
 
@@ -38,6 +37,11 @@ class Settings(BaseSettings):
 
     AZURE_AI_PROJECT_ENDPOINT : str
     AZURE_DEPLOYMENT_NAME : str
+
+
+    AZURE_CLIENT_ID : str
+    AZURE_TENANT_ID : str
+    AZURE_CLIENT_SECRET : str
 
 
 settings= Settings()

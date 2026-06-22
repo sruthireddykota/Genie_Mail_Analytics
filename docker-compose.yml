@@ -37,11 +37,11 @@ services:
       ME_CONFIG_MONGODB_URL: mongodb://${GENIE_MONGO_ROOT_USERNAME}:${GENIE_MONGO_ROOT_PASSWORD}@genie-mongodb:27017/
       ME_CONFIG_BASICAUTH_USERNAME: ${GENIE_MONGOEXPRESS_USERNAME}
       ME_CONFIG_BASICAUTH_PASSWORD: ${GENIE_MONGOEXPRESS_PASSWORD}
-  
+
   genie-api:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.fastapi
     container_name: genie-fastapi
     restart: always
     ports:
@@ -51,6 +51,24 @@ services:
     depends_on:
       genie-mongodb:
         condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      - ./Credentials.json:/app/Credentials.json
+      - ./token.json:/app/token.json
+
+  genie-streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
+    container_name: genie-streamlit
+    restart: always
+    ports:
+      - "8502:8501"
+    networks:
+      - genie_network
+    depends_on:
+      - genie-api
     env_file:
       - .env
 

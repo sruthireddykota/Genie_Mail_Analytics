@@ -1,7 +1,7 @@
 import pandas as pd
 from collections import defaultdict
 
-from agents.email_fetching_agent import fetch_new_email
+from gmail.email_fetch import fetch_new_email
 from agents.genie_agent import ask_genie, continue_conversation
 from agents.email_creator_agent import run_email_creator_agent
 from agents.question_splitter_agent import run_question_splitter

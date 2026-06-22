@@ -16,6 +16,7 @@ class MongoStore:
         self.chat_sessions = self.db["chat_sessions"]
         self.pending_emails = self.db["pending_emails"]
         self.conversations = self.db["conversations"]
+        self.processed_emails = self.db["processed_emails"]
         
 
     # Sessions
@@ -257,3 +258,18 @@ class MongoStore:
             {"$set": {"draft_email": draft_email, "updated_at": datetime.utcnow()}}
         )
         
+
+    #processed emails
+
+    def is_processed(self, message_id: str) -> bool:
+        return self.processed_emails.find_one({"message_id": message_id}) is not None
+
+    def mark_processed(self, message_id: str):
+        self.processed_emails.update_one(
+            {"message_id": message_id},
+            {"$setOnInsert": {
+                "message_id":  message_id,
+                "processed_at": datetime.utcnow(),
+            }},
+            upsert=True
+        )
