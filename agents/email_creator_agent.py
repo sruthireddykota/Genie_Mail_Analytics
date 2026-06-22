@@ -2,7 +2,9 @@ import asyncio
 
 from agent_framework import Agent, Message, Content
 from azure_clients.azure_client import get_client
+from utils.logger import get_logger
 
+logger=get_logger()
 
 class EmailCreatorAgent:
 
@@ -262,4 +264,5 @@ def run_email_creator_agent(sender, subject, question, genie_answer, dataframe):
         EmailCreatorAgent().create_email(sender, subject, question, genie_answer, dataframe)
     )
     loop.close()
+    logger.info("[Email Creator Agent]: Email created")
     return result

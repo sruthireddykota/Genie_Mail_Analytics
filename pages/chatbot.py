@@ -29,7 +29,7 @@ def create_chat_api(customer_email, title, genie_conv_id):
     return res.json().get("chat_id")
 
 def get_chats_by_customer_api(customer_email):
-    res = requests.get(f"{API_BASE_URL}/chat/{customer_email}/sessions")
+    res = requests.get(f"{API_BASE_URL}/chat/sessions/{customer_email}")
     return res.json()
 
 def get_chat_api(chat_id):

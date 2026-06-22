@@ -114,21 +114,20 @@ def update_draft(req: UpdateDraftRequest):
     store.update_pending_draft(req.pending_id, req.draft_email)
     return {"status": "updated"}
 
-
 # Sessions
 
 @app.get("/sessions")
 def get_all_sessions():
     return jsonable_encoder(store.get_all_sessions())
 
-@app.get("/sessions/{domain}/messages")
-def get_domain_messages(domain: str):
-    return jsonable_encoder(store.get_messages_by_domain(domain))
-
 @app.get("/sessions/domain/{domain}")
 def get_session_by_domain(domain: str):
     session = store.get_session_by_domain(domain)
     return jsonable_encoder(session) if session else None
+
+@app.get("/sessions/{domain}/messages")
+def get_domain_messages(domain: str):
+    return jsonable_encoder(store.get_messages_by_domain(domain))
 
 @app.post("/sessions/create")
 def create_session(req: CreateSessionRequest):
@@ -166,19 +165,10 @@ def message_exists(session_id: str, role: str, content: str):
 
 
 # Chatbot 
-
 @app.post("/chat/create")
 def create_chat(req: CreateChatRequest):
     chat_id = store.create_chat(req.customer_email, req.title, req.genie_conv_id)
     return {"chat_id": chat_id}
-
-@app.get("/chat/{customer_email}/sessions")
-def get_chat_sessions(customer_email: str):
-    return jsonable_encoder(store.get_chats_by_customer(customer_email))
-
-@app.get("/chat/{chat_id}/messages")
-def get_chat_messages(chat_id: str):
-    return jsonable_encoder(store.get_chat_messages(chat_id))
 
 @app.post("/chat/message")
 def save_chat_message(req: ChatMessageRequest):
@@ -190,6 +180,26 @@ def update_chat_conv(req: UpdateChatConvRequest):
     store.update_chat_conv_id(req.chat_id, req.genie_conv_id)
     return {"status": "updated"}
 
+@app.get("/chat/sessions/{customer_email}")
+def get_chat_sessions(customer_email: str):
+    return jsonable_encoder(store.get_chats_by_customer(customer_email))
+
+@app.get("/chat/{chat_id}")
+def get_chat(chat_id: str):
+    chat = store.get_chat(chat_id)
+    if not chat:
+        return {"status": "error", "detail": "Chat not found"}
+    return jsonable_encoder(chat)
+
+@app.get("/chat/{chat_id}/messages")
+def get_chat_messages(chat_id: str):
+    return jsonable_encoder(store.get_chat_messages(chat_id))
+
+@app.get("/chat/{chat_id}/context")
+def get_chat_context(chat_id: str, limit: int = 5):
+    context = store.build_chat_context(chat_id, limit=limit)
+    return {"chat_id": chat_id, "context": context}
+
 @app.delete("/chat/{chat_id}")
 def delete_chat(chat_id: str):
     store.delete_chat(chat_id)
@@ -199,18 +209,6 @@ def delete_chat(chat_id: str):
 def clear_chat(chat_id: str):
     store.clear_chat(chat_id)
     return {"status": "cleared"}
-
-@app.get("/chat/{chat_id}")
-def get_chat(chat_id: str):
-    chat = store.get_chat(chat_id)
-    if not chat:
-        return {"status": "error", "detail": "Chat not found"}
-    return jsonable_encoder(chat)
-
-@app.get("/chat/{chat_id}/context")
-def get_chat_context(chat_id: str, limit: int = 5):
-    context = store.build_chat_context(chat_id, limit=limit)
-    return {"chat_id": chat_id, "context": context}
 
 # Processed emails
 

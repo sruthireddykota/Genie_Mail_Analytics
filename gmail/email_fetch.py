@@ -11,7 +11,9 @@ from googleapiclient.discovery import build
 
 from config.settings import settings
 from mongodb.mongo_store import MongoStore
+from utils.logger import get_logger
 
+logger=get_logger()
 store = MongoStore()
 
 SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
@@ -83,7 +85,7 @@ def extract_text_from_pdf(pdf_bytes: bytes) -> str:
     try:
         reader = PyPDF2.PdfReader(io.BytesIO(pdf_bytes))
         total_pages = len(reader.pages)
-        print(f"PDF: {total_pages} pages found")
+        logger.info(f"PDF: {total_pages} pages found")
 
         for page in reader.pages:
             page_text = page.extract_text()
@@ -91,9 +93,9 @@ def extract_text_from_pdf(pdf_bytes: bytes) -> str:
                 text += page_text + "\n"
 
     except PyPDF2.errors.PdfReadError as e:
-        print(f"PDF read error — file may be corrupted or encrypted: {e}")
+        logger.info(f"PDF read error — file may be corrupted or encrypted: {e}")
     except Exception as e:
-        print(f"PDF extraction error: {e}")
+        logger.info(f"PDF extraction error: {e}")
 
     return text.strip()
 
@@ -165,10 +167,10 @@ def get_pdf_attachments(service, msg_id: str) -> list[dict]:
                     })
 
             except Exception as e:
-                print(f"Failed to fetch attachment {filename}: {e}")
+                logger.info(f"Failed to fetch attachment {filename}: {e}")
 
     except Exception as e:
-        print(f"Error scanning attachments: {e}")
+        logger.info(f"Error scanning attachments: {e}")
 
     return attachments
 
@@ -228,7 +230,7 @@ def fetch_new_email():
                 f"{pdf['text']}"
             )
     else:
-        print("No PDF attachments found")
+        logger.info("No PDF attachments found")
 
     store.mark_processed(msg_id)
 

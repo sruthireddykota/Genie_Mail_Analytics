@@ -3,6 +3,9 @@ import json
 import re
 from agent_framework import Agent, Message, Content
 from azure_clients.azure_client import get_client
+from utils.logger import get_logger
+
+logger=get_logger()
 
 DOMAIN_MAP = {
     "Sales":  "Sales",
@@ -177,6 +180,6 @@ def run_question_splitter(email_body: str, domain_hint: str = None) -> list[dict
         domain = llm_domain if llm_domain in ("Sales", "Franchise", "Customer") else "Miscellaneous"
         final.append({"question": clean_q, "domain": domain})
 
-    print(f"Question Splitter: {len(final)} questions found")
+    logger.info(f"[Question Splitter]: {len(final)} questions found")
 
     return final

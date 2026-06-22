@@ -7,7 +7,9 @@ from agents.email_creator_agent import run_email_creator_agent
 from agents.question_splitter_agent import run_question_splitter
 from mongodb.mongo_store import MongoStore
 from agents.visualization_agent import run_visualization_agent
+from utils.logger import get_logger
 
+logger=get_logger()
 store = MongoStore()
 
 
@@ -36,21 +38,22 @@ def run_pipeline() -> list[dict] | None:
 
     email_data = fetch_new_email()
     if not email_data:
+        logger.info({"Email data is not found"})
         return None
 
     sender = email_data["sender"]
-    subject  = email_data["subject"]
-    body  = email_data["body"]
+    subject = email_data["subject"]
+    body = email_data["body"]
     in_reply_to = email_data["in_reply_to"]
-    references  = email_data.get("references")
-    message_id  = email_data.get("message_id")
+    references = email_data.get("references")
+    message_id = email_data.get("message_id")
     domain_hint = email_data.get("domain_hint")
 
 
     session = store.get_session_by_reply(in_reply_to) if in_reply_to else None
 
     if session:
-        print(f"Follow-up detected")
+        logger.info(f"Follow-up detected")
 
         context = store.build_context_string(session["session_id"])
         enriched_q = f"{body}\n\n{context}" if context else body
@@ -93,7 +96,7 @@ def run_pipeline() -> list[dict] | None:
 
         return [result]
 
-    print("New email - splitting into questions")
+    logger.info("New email - splitting into questions")
     questions = run_question_splitter(body, domain_hint=domain_hint)
 
     domain_groups = defaultdict(list)
@@ -103,7 +106,7 @@ def run_pipeline() -> list[dict] | None:
     results = []
 
     for domain, domain_questions in domain_groups.items():
-        print(f"Processing domain: {domain} ({len(domain_questions)} question(s))")
+        logger.info(f"Processing domain: {domain} ({len(domain_questions)} question(s))")
 
         qa_pairs = []
         last_conv_id = None

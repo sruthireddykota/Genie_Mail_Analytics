@@ -4,6 +4,9 @@ import requests
 import pandas as pd 
 
 from config.settings import settings
+from utils.logger import get_logger
+
+logger=get_logger()
 
 HOST  = settings.DATABRICKS_HOST
 TOKEN  = settings.DATABRICKS_TOKEN
@@ -26,7 +29,7 @@ def fetch_query_results(statement_id):
         result=response.json()
 
         status=result.get("status", {}).get("state")
-        print(f"Query status: {status}")
+        logger.info(f"[Genie]:Query status: {status}")
 
         if status == "SUCCEEDED":
             
@@ -71,7 +74,7 @@ def poll_message(conversation_id, message_id):
         result.raise_for_status()
         result_data = result.json()
         status  = result_data.get("status")
-        print(f"Genie response status: {status}")
+        logger.info(f"[Genie]:Query status: {status}")
  
         if status == "COMPLETED":
             answer  = ""

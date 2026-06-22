@@ -1,7 +1,9 @@
 from google_auth_oauthlib.flow import InstalledAppFlow
 import os
 from dotenv import load_dotenv
+from utils.logger import get_logger
 
+logger=get_logger()
 load_dotenv()
 
 SCOPES  = ["https://www.googleapis.com/auth/gmail.modify"]
@@ -14,4 +16,4 @@ creds = flow.run_local_server(port=8080)
 with open(TOKEN_FILE, "w") as token:
     token.write(creds.to_json())
 
-print("token.json saved successfully.")
+logger.info("token.json saved successfully.")

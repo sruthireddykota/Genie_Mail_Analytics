@@ -3,7 +3,9 @@ import json
 
 from agent_framework import Agent, Message, Content
 from azure_clients.azure_client import get_client
+from utils.logger import get_logger
 
+logger=get_logger()
 
 class VisualizationAgent:
 
@@ -85,7 +87,7 @@ Only choose bar, line, pie, or none.
 
 def run_visualization_agent(question, sql, dataframe) -> dict | None:
     if dataframe is None or dataframe.empty:
-        print("Visualization skipped: empty dataframe")
+        logger.info("[Visualization Agent]: Empty dataframe")
         return None
 
     if len(dataframe.columns) < 2:

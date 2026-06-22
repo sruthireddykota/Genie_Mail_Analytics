@@ -9,6 +9,9 @@ from email import encoders
 
 import pandas as pd
 from config.settings import settings
+from utils.logger import get_logger
+
+logger=get_logger()
 
 
 SMTP_HOST = settings.SMTP_HOST
@@ -52,7 +55,7 @@ def send_email(
 
         msg["References"] = " ".join(ref_ids)
     else:
-        print("DEBUG SEND: in_reply_to is None — email will start a new thread")
+        logger.info("DEBUG SEND: in_reply_to is None — email will start a new thread")
 
     msg.attach(MIMEText(str(body), "plain"))
 
@@ -88,7 +91,7 @@ def send_email(
         part.add_header("Content-Disposition", f'attachment; filename="{attachment_name}"')
         msg.attach(part)
     else:
-        print("No Excel attachment needed.")
+        logger.info("No Excel attachment needed.")
 
     try:
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:

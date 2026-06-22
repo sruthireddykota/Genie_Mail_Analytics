@@ -28,7 +28,7 @@ Streamlit Approval UI  ──►  Human reviews & approves
 SMTP Send  ──►  Reply to sender
 ```
 
-**Key design principle:** All MongoDB persistence goes through the FastAPI service. Agent/LLM calls (Genie, Azure AI Foundry, chat title generation) stay as direct local imports — no HTTP round-trip for those.
+**Key design principle:** All MongoDB persistence goes through the FastAPI service. Agent/LLM calls (Genie, Azure AI Foundry, chat title generation) stay as direct local imports — no HTTP round-trip for those. All services use a centralised logger (`utils/logger.py`) that writes to both console and `logs/genielogs.log`.
 
 ---
 
@@ -77,7 +77,8 @@ Genie_Mail_Analytics/
 │   └── settings.py                  # Pydantic settings (single .env source)
 │
 ├── utils/
-│   └── chat_title.py                # Auto-generates chat session titles
+│   ├── chat_title.py                # Auto-generates chat session titles
+│   └── logger.py                    # Centralised logger (console + file output)
 │
 └── tests/                           # Test suite
 ```
@@ -106,15 +107,23 @@ cd Genie_Mail_Analytics
 
 ### 2. Configure environment variables
 
-Copy `env.example` to `.env` and fill in all values:
+Copy `.env.example` to `.env` and fill in all values:
 
 ```bash
-cp env.example .env
+cp .env.example .env
 ```
 
 > **Note:** When running with Docker, `MONGO_URI` must use the container name `genie-mongodb` and `API_BASE_URL` must use `genie-fastapi` — not `localhost`.
 
-### 3. Set up Gmail OAuth
+### 3. Create the logs directory
+
+```bash
+mkdir -p logs
+```
+
+This is required before running with Docker — the log volume mount expects the folder to exist on the host.
+
+### 4. Set up Gmail OAuth
 
 Download `Credentials.json` from Google Cloud Console (OAuth 2.0 Desktop App credentials) and place it in the project root. Then run the auth flow once locally:
 
@@ -128,6 +137,31 @@ python auth.py
 A browser window will open — sign in and grant access. This writes `token.json` and won't be needed again unless the token is revoked.
 
 Also create a Gmail label called `genie-queries` and apply it to inbound emails you want the system to process.
+
+### 5. Migrate existing processed emails (first-time only)
+
+Processed email IDs are now tracked in MongoDB instead of `processed_emails.json`. If you have an existing `processed_emails.json`, seed the MongoDB collection once to avoid reprocessing old emails:
+
+```bash
+python -c "
+import json
+from mongodb.mongo_store import MongoStore
+
+store = MongoStore()
+
+with open('processed_emails.json', 'r') as f:
+    ids = json.load(f)
+
+for msg_id in ids:
+    store.mark_processed(msg_id)
+
+print(f'Seeded {len(ids)} processed email IDs into MongoDB')
+"
+```
+
+After seeding, `processed_emails.json` is no longer needed and can be deleted.
+
+---
 
 ## Running with Docker
 
@@ -303,3 +337,4 @@ print(f'Seeded {len(ids)} IDs')
 | Email outbound | SMTP (smtplib) |
 | Containerisation | Docker + Docker Compose |
 | Config | Pydantic Settings |
+| Logging | Python `logging` (console + file) |
